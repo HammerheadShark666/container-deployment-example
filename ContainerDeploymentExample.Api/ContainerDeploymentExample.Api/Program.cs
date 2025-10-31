@@ -33,6 +33,19 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
+
+app.MapGet("/health-uai", () => "Is Healthy in System Assigned Identity")
+.WithName("health")
+.WithOpenApi();
+
+app.MapGet("/sunny-uai", () => "Is Sunny in System Assigned Identity")
+.WithName("Is Sunny")
+.WithOpenApi();
+
+app.MapGet("/rainy-uai", () => "Is Rainy in System Assigned Identity")
+.WithName("Is Rainy")
+.WithOpenApi();
+
 app.Run();
 
 internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
