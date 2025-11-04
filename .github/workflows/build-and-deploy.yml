@@ -34,29 +34,8 @@ jobs:
 
       - name: Build and Push Docker image to ACR
         run: | 
+          IMAGE_TAG=${{ github.sha }}
           az acr build \
             --registry ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }} \
-            --image ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ secrets.AZURE_CR_IMAGE_NAME }}:latest \
-            ./ContainerDeploymentExample.Api/ContainerDeploymentExample.Api
-
-      - name: Show logged-in identity
-        run: az account show
-      
-      - name: List role assignments for identity
-        run: az role assignment list --assignee ${{ secrets.AZURE_CLIENT_ID }} --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }} -o table
-      
-      - name: List container apps in resource group
-        run: az containerapp list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} -o table
- 
-      - name: Verify Container App exists
-        run: |
-          az containerapp show \
-            --name $AZURE_CONTAINER_APP_NAME \
-            --resource-group $AZURE_RESOURCE_GROUP
-
-      - name: Deploy to Container App
-        run: |
-          az containerapp update \
-            --name $AZURE_CONTAINER_APP_NAME \
-            --resource-group $AZURE_RESOURCE_GROUP \
-            --image $AZURE_CONTAINER_REGISTRY_NAME.azurecr.io/$AZURE_CR_IMAGE_NAME:latest
+            --image ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ secrets.AZURE_CR_IMAGE_NAME }}:$IMAGE_TAG \
+            ./ContainerDeploymentExample.Api/ContainerDeploymentExample.Api 
