@@ -39,6 +39,12 @@ jobs:
             --image ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ secrets.AZURE_CR_IMAGE_NAME }}:latest \
             ./ContainerDeploymentExample.Api/ContainerDeploymentExample.Api
 
+      - name: Verify Container App exists
+        run: |
+          az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
       - name: Deploy to Container App
         run: |
           az containerapp update \
