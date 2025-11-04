@@ -1,9 +1,8 @@
-name: Build and Deploy to Azure Container App
+name: Build and Push to ACR
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 permissions:
   id-token: write
@@ -13,44 +12,53 @@ env:
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
-  AZURE_CONTAINER_APP_NAME: prod-ca-container-deployment-mi
   AZURE_CONTAINER_REGISTRY_NAME: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+  AZURE_CONTAINER_APP_NAME: ${{ secrets.AZURE_CONTAINER_APP_NAME }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
   AZURE_CR_IMAGE_NAME: ${{ secrets.AZURE_CR_IMAGE_NAME }}
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Azure login using OIDC
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Login to Azure using OIDC
+      - name: Azure Login using OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ env.AZURE_CLIENT_ID }}
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: false
 
-      - name: Set subscription explicitly
+      # Ensure the correct subscription is set
+      - name: Set Azure subscription
         run: az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Login to ACR
-        run: az acr login --name $AZURE_CONTAINER_REGISTRY_NAME
-
-      - name: Build and push image
+      # Build and push Docker image to ACR
+      - name: Build and Push Docker image to ACR
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -t $AZURE_CONTAINER_REGISTRY_NAME.azurecr.io/$AZURE_CR_IMAGE_NAME:$IMAGE_TAG ./container-azure-deployment-api-mi
-          docker push $AZURE_CONTAINER_REGISTRY_NAME.azurecr.io/$AZURE_CR_IMAGE_NAME:$IMAGE_TAG
+          az acr build \
+            --registry ${{ env.AZURE_CONTAINER_REGISTRY_NAME }} \
+            --image ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.AZURE_CR_IMAGE_NAME }}:$IMAGE_TAG \
+            ./ContainerDeploymentExample.Api/ContainerDeploymentExample.Api
 
-      - name: Deploy to Container App if exists
+      # Deploy to Container App if it exists
+      - name: Deploy to Container App
         run: |
-          if az containerapp show --name $AZURE_CONTAINER_APP_NAME --resource-group $AZURE_RESOURCE_GROUP &> /dev/null; then
+          IMAGE_TAG=${{ github.sha }}
+          # Check if container app exists first
+          if az containerapp show --name ${{ env.AZURE_CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Container app found. Updating..."
             az containerapp update \
-              --name $AZURE_CONTAINER_APP_NAME \
-              --resource-group $AZURE_RESOURCE_GROUP \
-              --image $AZURE_CONTAINER_REGISTRY_NAME.azurecr.io/$AZURE_CR_IMAGE_NAME:${{ github.sha }}
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.AZURE_CR_IMAGE_NAME }}:$IMAGE_TAG
           else
-            echo "Container app does not exist or SP lacks permission."
+            echo "Container app not found or insufficient permissions."
             exit 1
           fi
