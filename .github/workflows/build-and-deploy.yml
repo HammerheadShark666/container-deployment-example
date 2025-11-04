@@ -42,8 +42,8 @@ jobs:
       - name: Verify Container App exists
         run: |
           az containerapp show \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }}
+            --name $AZURE_CONTAINER_APP_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP
 
       - name: Deploy to Container App
         run: |
