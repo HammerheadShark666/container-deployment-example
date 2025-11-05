@@ -34,16 +34,20 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 
-app.MapGet("/health-uai", () => "Is Healthy in System Assigned Identity")
+app.MapGet("/health-uai", () => "Is Healthy in OIDC")
 .WithName("health")
 .WithOpenApi();
 
-app.MapGet("/sunny-uai", () => "Is Sunny in System Assigned Identity")
+app.MapGet("/sunny-uai", () => "Is Sunny in OIDC")
 .WithName("Is Sunny")
 .WithOpenApi();
 
-app.MapGet("/rainy-uai", () => "Is Rainy in System Assigned Identity")
+app.MapGet("/rainy-uai", () => "Is Rainy in OIDC")
 .WithName("Is Rainy")
+.WithOpenApi();
+
+app.MapGet("/snowy-uai", () => "Is Snowy in OIDC")
+.WithName("Is Snowy")
 .WithOpenApi();
 
 app.Run();
