@@ -54,7 +54,7 @@ jobs:
           IMAGE: ${{ steps.setvars.outputs.IMAGE }}
           LATEST: ${{ steps.setvars.outputs.LATEST }}
         run: |
-          DOCKERFILE_PATH="./ContainerDeploymentExample.Api"
+          DOCKERFILE_PATH="./ContainerDeploymentExample.Api/ContainerDeploymentExample.Api"
           docker build -t $IMAGE -f $DOCKERFILE_PATH/Dockerfile $DOCKERFILE_PATH
           docker tag $IMAGE $LATEST
           docker push $IMAGE
