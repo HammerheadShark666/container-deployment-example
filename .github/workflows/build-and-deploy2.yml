@@ -7,10 +7,10 @@ on:
       - main
 
 env:
-  RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
-  ACR_NAME: ${{ secrets.ACR_NAME }}
-  IMAGE_PATH: ${{ secrets.IMAGE_PATH }}            # e.g. prod-rg-container-example-api
-  CONTAINER_APP_NAME: ${{ secrets.CONTAINER_APP_NAME }}
+  RESOURCE_GROUP: ${{ secrets.TEST_RESOURCE_GROUP }}
+  ACR_NAME: ${{ secrets.TEST_ACR_NAME }}
+  IMAGE_PATH: ${{ secrets.TEST_IMAGE_PATH }}            # e.g. prod-rg-container-example-api
+  CONTAINER_APP_NAME: ${{ secrets.TEST_CONTAINER_APP_NAME }}
 
 jobs:
   build-and-deploy:
