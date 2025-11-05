@@ -1,0 +1,75 @@
+# GitHub Actions workflow: build -> push to ACR -> update Azure Container App
+# Triggers on push to main (adjust as needed)
+name: Build and deploy to ACR + Container Apps
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # You can set these in GitHub Secrets instead if you prefer
+  RESOURCE_GROUP: ${{ secrets.TEST_RESOURCE_GROUP }}
+  ACR_NAME: ${{ secrets.TEST_ACR_NAME }}
+  IMAGE_PATH: ${{ secrets.TEST_IMAGE_PATH }}            # e.g. "prod-rg-container-example-api"
+  CONTAINER_APP_NAME: ${{ secrets.TEST_CONTAINER_APP_NAME }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.TEST_AZURE_CREDENTIALS }}
+
+      - name: Set image variables
+        id: setvars
+        run: |
+          REGISTRY=${{ env.ACR_NAME }}.azurecr.io
+          TAG=${GITHUB_SHA::8}
+          IMAGE="$REGISTRY/${{ env.IMAGE_PATH }}:${TAG}"
+          LATEST="$REGISTRY/${{ env.IMAGE_PATH }}:latest"
+          echo "REGISTRY=$REGISTRY" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
+          echo "LATEST=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: Login to ACR (configure docker credentials)
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Set up Docker Buildx (for advanced builds / caching if needed)
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image to ACR
+        run: |
+          # adjust path to your Dockerfile context
+          DOCKERFILE_PATH="./ContainerDeploymentExample.Api"
+          docker build -t $IMAGE -f $DOCKERFILE_PATH/Dockerfile $DOCKERFILE_PATH
+          docker tag $IMAGE $LATEST
+          docker push $IMAGE
+          docker push $LATEST
+        env:
+          IMAGE: ${{ steps.setvars.outputs.IMAGE }}
+          LATEST: ${{ steps.setvars.outputs.LATEST }}
+
+      - name: Update Container App to use new image
+        run: |
+          # Use the pushed image by sha-tag (IMAGE) to ensure immutable deployments
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image "${{ steps.setvars.outputs.IMAGE }}"
+        env:
+          IMAGE: ${{ steps.setvars.outputs.IMAGE }}
+
+      - name: Show Container App revisions (sanity check)
+        run: |
+          az containerapp revision list \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            -o table
