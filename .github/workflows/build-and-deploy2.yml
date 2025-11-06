@@ -1,4 +1,3 @@
-# GitHub Actions: Build -> push to ACR -> update Azure Container App using OIDC (no client secret)
 name: Build and deploy to ACR + Container Apps (OIDC)
 
 on:
